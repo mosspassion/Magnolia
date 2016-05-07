@@ -2,7 +2,9 @@
 
 #include "ofMain.h"
 #include "Sample.h"
+#include "ofxOSC.h"
 
+// Made with OF v0.9.3, untested w/ other versions.
 class ofApp : public ofBaseApp{
 
 	public:
@@ -27,5 +29,6 @@ class ofApp : public ofBaseApp{
         vector<shared_ptr<Sample>> samples;
         ofVideoPlayer player;
         ofRectangle vidRect;
+        ofxOscSender sender;
 		
 };

@@ -11,7 +11,7 @@
 const unsigned int Sample::bufferSize = BUFFER_SIZE;
 
 Sample::Sample(){
-    cout << "fuck me" << endl;
+
 }
 
 Sample::Sample(float vidWidthPercent, float vidHeightPercent) {
@@ -20,7 +20,12 @@ Sample::Sample(float vidWidthPercent, float vidHeightPercent) {
     _radius = 10;
     _valsIndex = 0;
     _selected = false;
+    _smooth = 0;
     _name = "";
+    _smoothedVals.push_back(SmoothedFloat(1, 0));
+    _smoothedVals.push_back(SmoothedFloat(1, 0));
+    _smoothedVals.push_back(SmoothedFloat(1, 0));
+    setSmooth(1);
 //    wtf = "fuckoff";
 }
 
@@ -35,12 +40,16 @@ void Sample::update(const ofRectangle& vidRect,
     ofColor c = pixels.getColor(vidSize.x * _vidPercent.x,
                                 vidSize.y * _vidPercent.y);
     
-    val[0] = c.r;
-    val[1] = c.g;
-    val[2] = c.b;
+    _smoothedVals[0].addValue(c.r);
+    _smoothedVals[1].addValue(c.g);
+    _smoothedVals[2].addValue(c.b);
+    
+    val[0] = int(_smoothedVals[0].getValue());
+    val[1] = int(_smoothedVals[1].getValue());
+    val[2] = int(_smoothedVals[2].getValue());
     // http://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
     // https://en.wikipedia.org/wiki/Relative_luminance
-    val[3] = int((0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b)); // luminance
+    val[3] = int((0.2126 * val[0] + 0.7152 * val[1] + 0.0722 * val[2])); // luminance
     
     vals[_valsIndex] = val;
     if (_valsIndex > BUFFER_SIZE - 1) {
@@ -80,6 +89,14 @@ void Sample::updateName() {
         setEnabled(true);
     }
 }
+
+void Sample::setSmooth(unsigned int numSamples) {
+    cout << "numSamples: " << numSamples << endl;
+    _smooth = numSamples;
+    for (auto& val : _smoothedVals) {
+        val.resizeBuffer(numSamples);
+    }
+};
 
 void Sample::_drawText() {
     stringstream s;

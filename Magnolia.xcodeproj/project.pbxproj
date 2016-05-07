@@ -97,6 +97,7 @@
 		F7FBC56859535E597B24BB91 /* NetworkingUtils.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = NetworkingUtils.h; path = ../../../addons/ofxOsc/libs/oscpack/src/ip/NetworkingUtils.h; sourceTree = SOURCE_ROOT; };
 		F8CB2C6F1CDAE4750014FFF4 /* Sample.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Sample.cpp; sourceTree = "<group>"; };
 		F8CB2C701CDAE4750014FFF4 /* Sample.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Sample.h; sourceTree = "<group>"; };
+		F8CB2C751CDE54720014FFF4 /* SmoothedFloat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SmoothedFloat.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -227,6 +228,7 @@
 				E4B69E1E0A3A1BDC003C02F2 /* ofApp.cpp */,
 				F8CB2C701CDAE4750014FFF4 /* Sample.h */,
 				F8CB2C6F1CDAE4750014FFF4 /* Sample.cpp */,
+				F8CB2C751CDE54720014FFF4 /* SmoothedFloat.h */,
 			);
 			path = src;
 			sourceTree = SOURCE_ROOT;

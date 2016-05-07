@@ -1,4 +1,5 @@
 #include "ofApp.h"
+// Made with OF v0.9.3, untested w/ other versions.
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -8,15 +9,31 @@ void ofApp::setup(){
     player.play();
     debug = false;
     selectedSampIndex = -1;
+    sender.setup("localhost", 12345);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
     player.update();
     for (auto sample : samples) {
+       
         sample->update(vidRect,
                        ofVec2f(player.getWidth(), player.getHeight()),
                        player.getPixels());
+        
+        if (sample->isEnabled()) {
+            ofxOscMessage m;
+            m.setAddress(sample->getName());
+            int val;
+            switch (sample->getType()) {
+                case Sample::sampleType::LIGHTNESS: val = sample->val[3]; break;
+                case Sample::sampleType::RED: val = sample->val[0]; break;
+                case Sample::sampleType::GREEN: val = sample->val[1]; break;
+                case Sample::sampleType::BLUE: val = sample->val[2]; break;
+            }
+            m.addIntArg(val);
+            sender.sendMessage(m, false);
+        }
     }
 }
 
@@ -43,12 +60,11 @@ void ofApp::draw(){
         }
     } else {
         if (samples.size() > 0) {
-//            cout << samples[0]->isSelected() << endl;
             int graphHeight = ofGetHeight() / samples.size();
             int sampNum = 1;
             for (auto sample : samples) {
-                int x = 0;
-                int sampWidth = ofGetWidth() / Sample::bufferSize;
+                float x = 0;
+                float sampWidth = float(ofGetWidth()) / float(Sample::bufferSize);
                 ofPushStyle();
                 ofDrawLine(x, (graphHeight * (sampNum - 1)), ofGetWidth(), (graphHeight * (sampNum - 1)));
                 if (sample->isSelected()) ofSetColor(255, 255, 0);
@@ -60,7 +76,9 @@ void ofApp::draw(){
                     case Sample::sampleType::BLUE: type = " | BLUE"; break;
                 }
                 string enabled = sample->isEnabled() ? " | ENABLED " : " | DISABLED";
-                ofDrawBitmapString(sample->getName() + type + enabled, x + 15, (graphHeight * (sampNum - 1)) + 15);
+                string name = sample->getName() != "" ? sample->getName() : "NO_ADDRESS";
+                string smooth = " | SMOOTH: " + ofToString(sample->getSmooth());
+                ofDrawBitmapString(name + type + enabled + smooth, x + 15, (graphHeight * (sampNum - 1)) + 15);
                 for (int i = 0; i < Sample::bufferSize; i++) {
                     ofSetColor(255, 0, 0);
                     ofDrawRectangle(x, (graphHeight * sampNum) - ofMap(sample->vals[i][0], 0, 255, 0, graphHeight), sampWidth, 1);
@@ -82,32 +100,49 @@ void ofApp::draw(){
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
+    
     if (key == ' ') {
         debug = !debug;
-    } else if (key == 127) { // backspace/delete
-        if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
-            if (ofGetKeyPressed(OF_KEY_SHIFT)) {
+    }
+    
+    if (selectedSampIndex != -1 && selectedSampIndex < samples.size())
+    {
+        // backspace/delete
+        if (key == 127)
+        {
+            if (ofGetKeyPressed(OF_KEY_SHIFT))
+            {
                 samples.erase(samples.begin() + selectedSampIndex);
-                if (samples.size() > 0) {
+                if (samples.size() > 0)
+                {
                     selectedSampIndex = 0;
                     samples[selectedSampIndex]->setSelected(true);
-                } else {
+                }
+                else
+                {
                     selectedSampIndex = -1;
                 }
-            } else {
+            }
+            else
+            {
                 samples[selectedSampIndex]->removeCharFromName();
             }
+        } else if (key == OF_KEY_RIGHT) {
+            samples[selectedSampIndex]->setSmooth(samples[selectedSampIndex]->getSmooth() + 1);
+        } else if (key == OF_KEY_LEFT && samples[selectedSampIndex]->getSmooth()) {
+            samples[selectedSampIndex]->setSmooth(samples[selectedSampIndex]->getSmooth() - 1);
         }
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
-    cout << key << endl;
-    // tab key
-    if (key == 9) {
-        // next selection
-        if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
+    
+    // if there is a selected sample
+    if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
+        // tab key
+        if (key == 9) {
+            // next selection
             samples[selectedSampIndex]->setSelected(false);
             if (selectedSampIndex == samples.size() - 1) {
                 selectedSampIndex = 0;
@@ -116,47 +151,57 @@ void ofApp::keyReleased(int key){
             }
             samples[selectedSampIndex]->setSelected(true);
         }
-    } else if (key == '/' ||
-              (key >= 65 && key <= 90) /*A-Z*/ ||
-              (key >= 97 && key <= 122) /*a-z*/ ||
-              (key >= 48 && key <= 57) /*0-9*/) {
-        if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
-            samples[selectedSampIndex]->addCharToName(key);
-        }
-    } else if (key == 13) { // enter
-        if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
-            samples[selectedSampIndex]->updateName();
-        }
-    } else if (key == OF_KEY_LEFT) {
-        if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
-            if (samples[selectedSampIndex]->getType() == Sample::sampleType::LIGHTNESS) {
-                samples[selectedSampIndex]->setType(Sample::sampleType::BLUE);
-            } else if (samples[selectedSampIndex]->getType() == Sample::sampleType::GREEN) {
-                samples[selectedSampIndex]->setType(Sample::sampleType::RED);
+        
+        if (!debug) {
+            if (key == '/' ||
+                 (key >= 65 && key <= 90) /*A-Z*/ ||
+                 (key >= 97 && key <= 122) /*a-z*/ ||
+                 (key >= 48 && key <= 57) /*0-9*/) {
+                samples[selectedSampIndex]->addCharToName(key);
+            } else if (key == 13) { // enter
+                samples[selectedSampIndex]->updateName();
+            } else if (key == OF_KEY_LEFT) {
+                if (samples[selectedSampIndex]->getType() == Sample::sampleType::LIGHTNESS) {
+                    samples[selectedSampIndex]->setType(Sample::sampleType::BLUE);
+                } else if (samples[selectedSampIndex]->getType() == Sample::sampleType::GREEN) {
+                    samples[selectedSampIndex]->setType(Sample::sampleType::RED);
+                }
+            } else if (key == OF_KEY_RIGHT) {
+                if (samples[selectedSampIndex]->getType() == Sample::sampleType::BLUE) {
+                    samples[selectedSampIndex]->setType(Sample::sampleType::LIGHTNESS);
+                } else if (samples[selectedSampIndex]->getType() == Sample::sampleType::RED) {
+                    samples[selectedSampIndex]->setType(Sample::sampleType::GREEN);
+                }
+            } else if (key == OF_KEY_UP) {
+                if (samples[selectedSampIndex]->getType() == Sample::sampleType::BLUE) {
+                    samples[selectedSampIndex]->setType(Sample::sampleType::RED);
+                } else if (samples[selectedSampIndex]->getType() == Sample::sampleType::LIGHTNESS) {
+                    samples[selectedSampIndex]->setType(Sample::sampleType::GREEN);
+                }
+            } else if (key == OF_KEY_DOWN) {
+                if (samples[selectedSampIndex]->getType() == Sample::sampleType::RED) {
+                    samples[selectedSampIndex]->setType(Sample::sampleType::BLUE);
+                } else if (samples[selectedSampIndex]->getType() == Sample::sampleType::GREEN) {
+                    samples[selectedSampIndex]->setType(Sample::sampleType::LIGHTNESS);
+                }
             }
-        }
-    } else if (key == OF_KEY_RIGHT) {
-        if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
-            if (samples[selectedSampIndex]->getType() == Sample::sampleType::BLUE) {
-                samples[selectedSampIndex]->setType(Sample::sampleType::LIGHTNESS);
-            } else if (samples[selectedSampIndex]->getType() == Sample::sampleType::RED) {
-                samples[selectedSampIndex]->setType(Sample::sampleType::GREEN);
-            }
-        }
-    } else if (key == OF_KEY_UP) {
-        if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
-            if (samples[selectedSampIndex]->getType() == Sample::sampleType::BLUE) {
-                samples[selectedSampIndex]->setType(Sample::sampleType::RED);
-            } else if (samples[selectedSampIndex]->getType() == Sample::sampleType::LIGHTNESS) {
-                samples[selectedSampIndex]->setType(Sample::sampleType::GREEN);
-            }
-        }
-    } else if (key == OF_KEY_DOWN) {
-        if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
-            if (samples[selectedSampIndex]->getType() == Sample::sampleType::RED) {
-                samples[selectedSampIndex]->setType(Sample::sampleType::BLUE);
-            } else if (samples[selectedSampIndex]->getType() == Sample::sampleType::GREEN) {
-                samples[selectedSampIndex]->setType(Sample::sampleType::LIGHTNESS);
+        } else { // debug
+            if (key == OF_KEY_UP) {
+                int type = samples[selectedSampIndex]->getType();
+                if (type < 3) {
+                    type++;
+                    samples[selectedSampIndex]->setType((Sample::sampleType) type);
+                } else samples[selectedSampIndex]->setType((Sample::sampleType) 0);
+            } else if (key == OF_KEY_DOWN) {
+                int type = samples[selectedSampIndex]->getType();
+                if (type != 0) {
+                    type--;
+                    samples[selectedSampIndex]->setType((Sample::sampleType) type);
+                } else samples[selectedSampIndex]->setType((Sample::sampleType) 3);
+            } else if (key == 'e' || key == 'E') {
+                if (samples[selectedSampIndex]->getName() != "") {
+                    samples[selectedSampIndex]->setEnabled(!samples[selectedSampIndex]->isEnabled());
+                }
             }
         }
     }
@@ -175,28 +220,30 @@ void ofApp::mouseDragged(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
     
-    float vidWidthPercent;
-    float vidHeightPercent;
-    bool fullWidth = ofGetWidth() <= ofGetHeight();
-    
-    if (fullWidth) {
-        int offset = (ofGetHeight() - vidRect.height) * 0.5;
-        vidWidthPercent = float(x) / float(vidRect.width);
-        vidHeightPercent = float(y - offset) / float(vidRect.height);
-    } else {
-        int offset = (ofGetWidth() - vidRect.width) * 0.5;
-        vidWidthPercent = float(x - offset) / float(vidRect.width);
-        vidHeightPercent = float(y) / float(vidRect.height);
+    if (!debug) {
+        float vidWidthPercent;
+        float vidHeightPercent;
+        bool fullWidth = ofGetWidth() <= ofGetHeight();
+        
+        if (fullWidth) {
+            int offset = (ofGetHeight() - vidRect.height) * 0.5;
+            vidWidthPercent = float(x) / float(vidRect.width);
+            vidHeightPercent = float(y - offset) / float(vidRect.height);
+        } else {
+            int offset = (ofGetWidth() - vidRect.width) * 0.5;
+            vidWidthPercent = float(x - offset) / float(vidRect.width);
+            vidHeightPercent = float(y) / float(vidRect.height);
+        }
+        
+        if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
+            samples[selectedSampIndex]->setSelected(false);
+        }
+        
+        shared_ptr<Sample> samp(new Sample(vidWidthPercent, vidHeightPercent));
+        samp->setSelected(true);
+        samples.push_back(samp);
+        selectedSampIndex = samples.size() - 1;
     }
-    
-    if (selectedSampIndex != -1 && selectedSampIndex < samples.size()) {
-        samples[selectedSampIndex]->setSelected(false);
-    }
-    
-    shared_ptr<Sample> samp(new Sample(vidWidthPercent, vidHeightPercent));
-    samp->setSelected(true);
-    samples.push_back(samp);
-    selectedSampIndex = samples.size() - 1;
 }
 
 //--------------------------------------------------------------
@@ -215,7 +262,7 @@ void ofApp::mouseExited(int x, int y){
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
-    cout << samples[0]->isSelected() << endl;
+
 }
 
 //--------------------------------------------------------------
