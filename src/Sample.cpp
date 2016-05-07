@@ -11,14 +11,17 @@
 const unsigned int Sample::bufferSize = BUFFER_SIZE;
 
 Sample::Sample(){
-    
+    cout << "fuck me" << endl;
 }
 
 Sample::Sample(float vidWidthPercent, float vidHeightPercent) {
     _vidPercent.set(vidWidthPercent, vidHeightPercent);
-    type = sampleType::VAL;
+    _type = sampleType::LIGHTNESS;
     _radius = 10;
     _valsIndex = 0;
+    _selected = false;
+    _name = "";
+//    wtf = "fuckoff";
 }
 
 void Sample::update(const ofRectangle& vidRect,
@@ -49,7 +52,7 @@ void Sample::update(const ofRectangle& vidRect,
 
 void Sample::draw() {
     ofPushStyle();
-    ofSetColor(255);
+    isSelected() ? ofSetColor(255, 255, 0) : ofSetColor(255);
     _drawCrosshair();
     _drawText();
     ofPopStyle();
@@ -59,16 +62,43 @@ void Sample::mouseDown() {
     
 }
 
+void Sample::addCharToName(char c) {
+    setEnabled(false);
+    _name += c;
+}
+
+void Sample::removeCharFromName() {
+    setEnabled(false);
+    _name = _name.substr(0, _name.size() - 1);
+}
+
+void Sample::updateName() {
+    if (_name.length() > 0) {
+        if (_name[0] != '/') {
+            _name.insert(_name.begin(), '/');
+        }
+        setEnabled(true);
+    }
+}
+
 void Sample::_drawText() {
     stringstream s;
-    s << "r: " << val[0] << ", " << "g: " << val[1] << "\n";
-    s << "b: " << val[2] << ", " << "l: " << val[3];
+    if (_name != "") s << _name << endl;
+    if (_type == sampleType::RED)       s << "[R]: " << val[0] << ", " ;
+    else                                s << "r: " << val[0] << ", ";
+    if (_type == sampleType::GREEN)     s << "[G]: " << val[1] << ", \n" ;
+    else                                s << "g: " << val[1] << ", \n";
+    if (_type == sampleType::BLUE)      s << "[B]: " << val[2] << ", " ;
+    else                                s << "b: " << val[2] << ", ";
+    if (_type == sampleType::LIGHTNESS) s << "[L]: " << val[3] << ", " ;
+    else                                s << "l: " << val[3] << ", ";
+   
     ofDrawBitmapString(s.str(), _pos.x + 15, _pos.y + 15);
 }
 
 void Sample::_drawCrosshair() {
     ofNoFill();
-    ofSetLineWidth(1);
+    ofSetLineWidth(0.5);
     ofDrawCircle(_pos.x, _pos.y, _radius);
     ofDrawLine(_pos.x - 15, _pos.y, _pos.x + 15, _pos.y);
     ofDrawLine(_pos.x, _pos.y - 15, _pos.x, _pos.y + 15);

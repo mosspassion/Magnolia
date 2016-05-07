@@ -23,6 +23,7 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
         bool debug;
+        int selectedSampIndex;
         vector<shared_ptr<Sample>> samples;
         ofVideoPlayer player;
         ofRectangle vidRect;
