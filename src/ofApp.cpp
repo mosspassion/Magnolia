@@ -54,13 +54,13 @@ void ofApp::draw(){
                 if (sample->isSelected()) ofSetColor(255, 255, 0);
                 string type;
                 switch (sample->getType()) {
-                    case Sample::sampleType::LIGHTNESS: type = "LIGHTNESS"; break;
-                    case Sample::sampleType::RED: type = "RED"; break;
-                    case Sample::sampleType::GREEN: type = "GREEN"; break;
-                    case Sample::sampleType::BLUE: type = "BLUE"; break;
+                    case Sample::sampleType::LIGHTNESS: type = " | LIGHTNESS"; break;
+                    case Sample::sampleType::RED: type = " | RED"; break;
+                    case Sample::sampleType::GREEN: type = " | GREEN"; break;
+                    case Sample::sampleType::BLUE: type = " | BLUE"; break;
                 }
-                
-                ofDrawBitmapString(sample->getName() + " | " + type, x + 15, (graphHeight * (sampNum - 1)) + 15);
+                string enabled = sample->isEnabled() ? " | ENABLED " : " | DISABLED";
+                ofDrawBitmapString(sample->getName() + type + enabled, x + 15, (graphHeight * (sampNum - 1)) + 15);
                 for (int i = 0; i < Sample::bufferSize; i++) {
                     ofSetColor(255, 0, 0);
                     ofDrawRectangle(x, (graphHeight * sampNum) - ofMap(sample->vals[i][0], 0, 255, 0, graphHeight), sampWidth, 1);
