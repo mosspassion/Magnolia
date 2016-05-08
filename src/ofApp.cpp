@@ -34,9 +34,9 @@ void ofApp::update(){
                 case Sample::sampleType::GREEN: val = sample->val[1]; break;
                 case Sample::sampleType::BLUE: val = sample->val[2]; break;
             }
-//            m.addIntArg(val);
-            ofVec2f scale = sample->getScaleBounds();
-            m.addFloatArg(ofMap(val, scale.x, scale.y, 0, 1));
+            
+            const ofVec2f& scale = sample->getScaleBounds();
+            m.addFloatArg(ofClamp(ofMap(val, scale.x, scale.y, 0, 1), 0, 1));
             sender.sendMessage(m, false);
             
             // send messages to aliases
@@ -49,9 +49,8 @@ void ofApp::update(){
                     case Sample::sampleType::GREEN: val = sample->val[1]; break;
                     case Sample::sampleType::BLUE: val = sample->val[2]; break;
                 }
-//                m.addIntArg(val);
-                ofVec2f scale = sample->getScaleBounds();
-                m.addFloatArg(ofMap(val, scale.x, scale.y, 0, 1));
+                const ofVec2f& scale = sample->getScaleBounds();
+                m.addFloatArg(ofClamp(ofMap(val, scale.x, scale.y, 0, 1), 0, 1));
                 sender.sendMessage(m, false);
             }
         }
@@ -116,6 +115,20 @@ void ofApp::draw(){
                 ofDrawBitmapString("ALIASES:", 15, graphHeight * (sampNum - 1) + 30);
                 ofDrawBitmapString("WINDOW:", ofGetWidth()/2 - 40, graphHeight * (sampNum - 1) + 15);
                 ofSetColor(255);
+                const ofVec2f& scale = sample->getScaleBounds();
+                int y = (graphHeight * sampNum) - ofMap(scale.x, 0, 255, 0, graphHeight);
+                int y2 = (graphHeight * sampNum) - ofMap(scale.y, 0, 255, 0, graphHeight);
+                ofSetColor(0, 255, 255);
+                ofSetLineWidth(0.7);
+                // draw dashed lines
+                for (int x = 0; x < ofGetWidth(); x += 20) {
+                    ofDrawLine(x, y, x + 10, y);
+                }
+                
+                for (int x = 0; x < ofGetWidth(); x += 20) {
+                    ofDrawLine(x, y2, x + 10, y2);
+                }
+                
 //                ofNoFill();
 //                ofDrawRectangle(aliasFields[sampNum - 1]->bounds);
                 ofFill();
@@ -276,7 +289,7 @@ void ofApp::keyPressed(int key){
         } else if (key == OF_KEY_UP) {
             if (ofGetKeyPressed(OF_KEY_SHIFT)) {
                 const ofVec2f& scale = samples[selectedSampIndex]->getScaleBounds();
-                int speed = 3;
+                int speed = 4;
                 if (ofGetKeyPressed(OF_KEY_SUPER)) {
                     if (scale.x + speed < scale.y && scale.x + speed <= 255) {
                         samples[selectedSampIndex]->setScaleBoundsMin(scale.x + speed);
@@ -292,14 +305,14 @@ void ofApp::keyPressed(int key){
         } else if (key == OF_KEY_DOWN) {
             if (ofGetKeyPressed(OF_KEY_SHIFT)) {
                 const ofVec2f& scale = samples[selectedSampIndex]->getScaleBounds();
-                int speed = 3;
+                int speed = 4;
                 if (ofGetKeyPressed(OF_KEY_SUPER)) {
                     if (scale.x - speed >= 0) {
                         samples[selectedSampIndex]->setScaleBoundsMin(scale.x - speed);
                         cout << "Min: " << samples[selectedSampIndex]->getScaleBounds().x << endl;
                     }
                 } else {
-                    if (scale.y - speed > scale.x && speed ) {
+                    if (scale.y - speed > scale.x && scale.y >= 0) {
                        samples[selectedSampIndex]->setScaleBoundsMax(scale.y - speed);
                        cout << "Max: " << samples[selectedSampIndex]->getScaleBounds().y << endl;
                     }
@@ -485,7 +498,7 @@ void ofApp::mouseReleased(int x, int y, int button){
                 m.setAddress(samples[i]->getWindow().address);
                 for (float& v : vec) {
                     ofVec2f scale = samples[i]->getScaleBounds();
-                    m.addFloatArg(ofMap(v, scale.x, scale.y, 0, 1));
+                    m.addFloatArg(ofClamp(ofMap(v, scale.x, scale.y, 0, 1), 0, 1));
                 }
                 sender.sendMessage(m);
                 
