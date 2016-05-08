@@ -37,7 +37,6 @@ public:
                 const ofVec2f& vidSize,
                 const ofPixels& pixels);
     void draw();
-    void mouseDown();
     void addCharToName(char c);
     void removeCharFromName();
     void updateName();
@@ -47,6 +46,7 @@ public:
     void setEnabled(bool e) { _enabled = e; };
     void setType(sampleType type) { _type = type; };
     void setSmooth(unsigned int numSamples);
+    void setWindow(const AliasAddress& window) { _window = window; };
     unsigned int getSmooth() { return _smooth; };
     bool isSelected() { return _selected; };
     bool isEnabled() { return _enabled; };
@@ -55,6 +55,11 @@ public:
     void addAlias(const AliasAddress& alias) { _aliases.push_back(alias); };
     void clearAliases() { _aliases.clear(); };
     const vector<AliasAddress>& getAliases() { return _aliases; };
+    const AliasAddress& getWindow() { return _window; };
+    void fillValsByType(vector<float>& vec,
+                        sampleType type,
+                        unsigned int start = 0,
+                        unsigned int end = BUFFER_SIZE - 1);
     
     ofVec4f vals[BUFFER_SIZE];
     //WTF, if vals is declared as the last public variable shit hits the fan
@@ -72,9 +77,11 @@ protected:
     ofVec2f _pos;
     ofVec2f _vidPercent;
     string _name;
+    AliasAddress _window;
     sampleType _type;
     vector<SmoothedFloat> _smoothedVals;
     vector<AliasAddress> _aliases;
+    
     
 };
 

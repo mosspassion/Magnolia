@@ -26,6 +26,7 @@ Sample::Sample(float vidWidthPercent, float vidHeightPercent) {
     _smoothedVals.push_back(SmoothedFloat(1, 0));
     _smoothedVals.push_back(SmoothedFloat(1, 0));
     setSmooth(1);
+
 //    wtf = "fuckoff";
 }
 
@@ -67,10 +68,6 @@ void Sample::draw() {
     ofPopStyle();
 }
 
-void Sample::mouseDown() {
-    
-}
-
 void Sample::addCharToName(char c) {
     setEnabled(false);
     _name += c;
@@ -94,6 +91,21 @@ void Sample::setSmooth(unsigned int numSamples) {
     _smooth = numSamples;
     for (auto& val : _smoothedVals) {
         val.resizeBuffer(numSamples);
+    }
+};
+
+// receives empty vector and populates it
+void Sample::fillValsByType(vector<float>& vec, sampleType type, unsigned int start, unsigned int end) {
+    if (start < BUFFER_SIZE && end < BUFFER_SIZE) {
+            while (start < end) {
+            switch (type) {
+                case sampleType::LIGHTNESS: vec.push_back(vals[start][3]); break;
+                case sampleType::RED: vec.push_back(vals[start][0]); break;
+                case sampleType::GREEN: vec.push_back(vals[start][1]); break;
+                case sampleType::BLUE: vec.push_back(vals[start][2]); break;
+            }
+            start++;
+        }
     }
 };
 
