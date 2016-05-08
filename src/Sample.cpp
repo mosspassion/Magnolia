@@ -25,9 +25,8 @@ Sample::Sample(float vidWidthPercent, float vidHeightPercent) {
     _smoothedVals.push_back(SmoothedFloat(1, 0));
     _smoothedVals.push_back(SmoothedFloat(1, 0));
     _smoothedVals.push_back(SmoothedFloat(1, 0));
+    _scaleBounds.set(0, 255);
     setSmooth(1);
-
-//    wtf = "fuckoff";
 }
 
 void Sample::update(const ofRectangle& vidRect,

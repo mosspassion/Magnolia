@@ -47,6 +47,10 @@ public:
     void setType(sampleType type) { _type = type; };
     void setSmooth(unsigned int numSamples);
     void setWindow(const AliasAddress& window) { _window = window; };
+    void setScaleBounds(int min, int max) { _scaleBounds.set(min, max); };
+    void setScaleBoundsMin(int min) { _scaleBounds.x = min; };
+    void setScaleBoundsMax(int max) { _scaleBounds.y = max; };
+    const ofVec2f& getScaleBounds() { return _scaleBounds; };
     unsigned int getSmooth() { return _smooth; };
     bool isSelected() { return _selected; };
     bool isEnabled() { return _enabled; };
@@ -81,6 +85,7 @@ protected:
     sampleType _type;
     vector<SmoothedFloat> _smoothedVals;
     vector<AliasAddress> _aliases;
+    ofVec2f _scaleBounds; // x = min, y = max
     
     
 };

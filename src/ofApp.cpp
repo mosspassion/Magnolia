@@ -9,7 +9,7 @@ void ofApp::setup(){
     player.play();
     debug = false;
     selectedSampIndex = -1;
-    sender.setup("localhost", 12345);
+    sender.setup("192.168.1.104", 12345);
     windowClickPoints.set(-1);
 }
 
@@ -34,8 +34,9 @@ void ofApp::update(){
                 case Sample::sampleType::GREEN: val = sample->val[1]; break;
                 case Sample::sampleType::BLUE: val = sample->val[2]; break;
             }
-            m.addIntArg(val);
-            m.addFloatArg(ofMap(val, 0, 255, 0, 1));
+//            m.addIntArg(val);
+            ofVec2f scale = sample->getScaleBounds();
+            m.addFloatArg(ofMap(val, scale.x, scale.y, 0, 1));
             sender.sendMessage(m, false);
             
             // send messages to aliases
@@ -48,8 +49,9 @@ void ofApp::update(){
                     case Sample::sampleType::GREEN: val = sample->val[1]; break;
                     case Sample::sampleType::BLUE: val = sample->val[2]; break;
                 }
-                m.addIntArg(val);
-                m.addFloatArg(ofMap(val, 0, 255, 0, 1));
+//                m.addIntArg(val);
+                ofVec2f scale = sample->getScaleBounds();
+                m.addFloatArg(ofMap(val, scale.x, scale.y, 0, 1));
                 sender.sendMessage(m, false);
             }
         }
@@ -265,11 +267,44 @@ void ofApp::keyPressed(int key){
                    !aliasFields[selectedSampIndex]->getIsEditing() &&
                    !windowFields[selectedSampIndex]->getIsEditing()) {
             samples[selectedSampIndex]->setSmooth(samples[selectedSampIndex]->getSmooth() + 1);
+            
         } else if (key == OF_KEY_LEFT &&
                    samples[selectedSampIndex]->getSmooth() != 0 &&
                    !aliasFields[selectedSampIndex]->getIsEditing() &&
                    !windowFields[selectedSampIndex]->getIsEditing()) {
             samples[selectedSampIndex]->setSmooth(samples[selectedSampIndex]->getSmooth() - 1);
+        } else if (key == OF_KEY_UP) {
+            if (ofGetKeyPressed(OF_KEY_SHIFT)) {
+                const ofVec2f& scale = samples[selectedSampIndex]->getScaleBounds();
+                int speed = 3;
+                if (ofGetKeyPressed(OF_KEY_SUPER)) {
+                    if (scale.x + speed < scale.y && scale.x + speed <= 255) {
+                        samples[selectedSampIndex]->setScaleBoundsMin(scale.x + speed);
+                        cout << "Min: " << samples[selectedSampIndex]->getScaleBounds().x << endl;
+                    }
+                } else {
+                    if (scale.y + speed <= 255) {
+                        samples[selectedSampIndex]->setScaleBoundsMax(scale.y + speed);
+                        cout << "Max: " << samples[selectedSampIndex]->getScaleBounds().y << endl;
+                    }
+                }
+            }
+        } else if (key == OF_KEY_DOWN) {
+            if (ofGetKeyPressed(OF_KEY_SHIFT)) {
+                const ofVec2f& scale = samples[selectedSampIndex]->getScaleBounds();
+                int speed = 3;
+                if (ofGetKeyPressed(OF_KEY_SUPER)) {
+                    if (scale.x - speed >= 0) {
+                        samples[selectedSampIndex]->setScaleBoundsMin(scale.x - speed);
+                        cout << "Min: " << samples[selectedSampIndex]->getScaleBounds().x << endl;
+                    }
+                } else {
+                    if (scale.y - speed > scale.x && speed ) {
+                       samples[selectedSampIndex]->setScaleBoundsMax(scale.y - speed);
+                       cout << "Max: " << samples[selectedSampIndex]->getScaleBounds().y << endl;
+                    }
+                }
+            }
         }
     }
 }
@@ -325,27 +360,31 @@ void ofApp::keyReleased(int key){
                 }
             }
         } else { // debug
-            if (key == OF_KEY_UP &&
-                !aliasFields[selectedSampIndex]->getIsEditing() &&
-                !windowFields[selectedSampIndex]->getIsEditing()) {
-                int type = samples[selectedSampIndex]->getType();
-                if (type < 3) {
-                    type++;
-                    samples[selectedSampIndex]->setType((Sample::sampleType) type);
-                } else samples[selectedSampIndex]->setType((Sample::sampleType) 0);
-            } else if (key == OF_KEY_DOWN &&
-                       !aliasFields[selectedSampIndex]->getIsEditing() &&
-                       !windowFields[selectedSampIndex]->getIsEditing()) {
-                int type = samples[selectedSampIndex]->getType();
-                if (type != 0) {
-                    type--;
-                    samples[selectedSampIndex]->setType((Sample::sampleType) type);
-                } else samples[selectedSampIndex]->setType((Sample::sampleType) 3);
-            } else if ((key == 'e' || key == 'E') &&
-                       !aliasFields[selectedSampIndex]->getIsEditing() &&
-                       !windowFields[selectedSampIndex]->getIsEditing()) {
-                if (samples[selectedSampIndex]->getName() != "") {
-                    samples[selectedSampIndex]->setEnabled(!samples[selectedSampIndex]->isEnabled());
+            if (ofGetKeyPressed(OF_KEY_SHIFT)) {
+                if (!aliasFields[selectedSampIndex]->getIsEditing() &&
+                    !windowFields[selectedSampIndex]->getIsEditing()) {
+                    
+                }
+            } else {
+                if (!aliasFields[selectedSampIndex]->getIsEditing() &&
+                    !windowFields[selectedSampIndex]->getIsEditing()) {
+                    if (key == OF_KEY_UP) {
+                        int type = samples[selectedSampIndex]->getType();
+                        if (type < 3) {
+                            type++;
+                            samples[selectedSampIndex]->setType((Sample::sampleType) type);
+                        } else samples[selectedSampIndex]->setType((Sample::sampleType) 0);
+                    } else if (key == OF_KEY_DOWN) {
+                        int type = samples[selectedSampIndex]->getType();
+                        if (type != 0) {
+                            type--;
+                            samples[selectedSampIndex]->setType((Sample::sampleType) type);
+                        } else samples[selectedSampIndex]->setType((Sample::sampleType) 3);
+                    } else if ((key == 'e' || key == 'E')) {
+                        if (samples[selectedSampIndex]->getName() != "") {
+                            samples[selectedSampIndex]->setEnabled(!samples[selectedSampIndex]->isEnabled());
+                        }
+                    }
                 }
             }
         }
@@ -445,7 +484,8 @@ void ofApp::mouseReleased(int x, int y, int button){
                 ofxOscMessage m;
                 m.setAddress(samples[i]->getWindow().address);
                 for (float& v : vec) {
-                    m.addIntArg(v);
+                    ofVec2f scale = samples[i]->getScaleBounds();
+                    m.addFloatArg(ofMap(v, scale.x, scale.y, 0, 1));
                 }
                 sender.sendMessage(m);
                 
