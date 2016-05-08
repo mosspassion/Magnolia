@@ -91,7 +91,6 @@ void Sample::updateName() {
 }
 
 void Sample::setSmooth(unsigned int numSamples) {
-    cout << "numSamples: " << numSamples << endl;
     _smooth = numSamples;
     for (auto& val : _smoothedVals) {
         val.resizeBuffer(numSamples);

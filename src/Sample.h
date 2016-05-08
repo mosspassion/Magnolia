@@ -25,6 +25,11 @@ public:
         LIGHTNESS
     };
     
+    struct AliasAddress {
+        sampleType type;
+        string address;
+    };
+    
     Sample();
     Sample(float vidWidthPercent, float vidHeightPercent);
     
@@ -46,8 +51,10 @@ public:
     bool isSelected() { return _selected; };
     bool isEnabled() { return _enabled; };
     const string& getName() { return _name; };
-    const vector<string>& getAliases() { return _aliases; };
     sampleType getType() { return _type; };
+    void addAlias(const AliasAddress& alias) { _aliases.push_back(alias); };
+    void clearAliases() { _aliases.clear(); };
+    const vector<AliasAddress>& getAliases() { return _aliases; };
     
     ofVec4f vals[BUFFER_SIZE];
     //WTF, if vals is declared as the last public variable shit hits the fan
@@ -65,9 +72,9 @@ protected:
     ofVec2f _pos;
     ofVec2f _vidPercent;
     string _name;
-    vector<string> _aliases;
     sampleType _type;
     vector<SmoothedFloat> _smoothedVals;
+    vector<AliasAddress> _aliases;
     
 };
 

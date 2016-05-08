@@ -22,6 +22,8 @@ void ofApp::update(){
                        player.getPixels());
         
         if (sample->isEnabled()) {
+            
+            // send messages to main address/name
             ofxOscMessage m;
             m.setAddress(sample->getName());
             int val;
@@ -32,7 +34,25 @@ void ofApp::update(){
                 case Sample::sampleType::BLUE: val = sample->val[2]; break;
             }
             m.addIntArg(val);
+            m.addFloatArg(ofMap(val, 0, 255, 0, 1));
             sender.sendMessage(m, false);
+            
+            // send messages to aliases
+            for (const auto& alias: sample->getAliases()) {
+                cout << "alias: " << alias.address << endl;
+                m.clear();
+                m.setAddress(alias.address);
+                switch (alias.type) {
+                    case Sample::sampleType::LIGHTNESS: val = sample->val[3]; break;
+                    case Sample::sampleType::RED: val = sample->val[0]; break;
+                    case Sample::sampleType::GREEN: val = sample->val[1]; break;
+                    case Sample::sampleType::BLUE: val = sample->val[2]; break;
+                }
+                m.addIntArg(val);
+                m.addFloatArg(ofMap(val, 0, 255, 0, 1));
+                sender.sendMessage(m, false);
+            }
+            
         }
     }
 }
@@ -91,8 +111,71 @@ void ofApp::draw(){
                     ofSetColor(255);
                     x+=sampWidth;
                 }
+                if (sample->isSelected()) ofSetColor(255, 255, 0);
+                ofDrawBitmapString("ALIASES:", 15, graphHeight * (sampNum - 1) + 30);
+                ofSetColor(255);
+//                ofNoFill();
+//                ofDrawRectangle(aliasFields[sampNum - 1]->bounds);
+                ofFill();
+                aliasFields[sampNum - 1]->draw();
                 ofPopStyle();
                 sampNum++;
+            }
+        }
+    }
+}
+
+void ofApp::updateAliasFieldPositions() {
+    int graphHeight = ofGetHeight() / aliasFields.size();
+    int i = 0;
+    for (auto field : aliasFields) {
+        field->bounds.y = graphHeight * i + 15;
+        i++;
+    }
+}
+
+void ofApp::onAliasFieldTextChanged(const void * sender, string& text) {
+    for (int i = 0; i < aliasFields.size(); i++) {
+        // what is the index of this sample?
+        if (((ofxTextInputField*) sender) == &(*aliasFields[i])) {
+            
+//            string t = text; // copy
+            samples[i]->clearAliases();
+            ofStringReplace(text, "\n", " ");
+            
+            auto aliases = ofSplitString(text, " ");
+            for (string& a : aliases) {
+                
+                Sample::AliasAddress alias;
+                if (a.length() > 1 && a[1] == ':') {
+                    switch (a[0]) {
+                        case 'r': case 'R':
+                            alias.type = Sample::sampleType::RED;
+                            break;
+                        case 'g': case 'G':
+                            alias.type = Sample::sampleType::GREEN;
+                            break;
+                        case 'b': case 'B':
+                            alias.type = Sample::sampleType::BLUE;
+                            break;
+                        case 'l': case 'L':
+                            alias.type = Sample::sampleType::LIGHTNESS;
+                            break;
+                        default:
+                            alias.type = samples[i]->getType();
+                            break;
+                    }
+                    a.erase(0, 2);
+                } else {
+                    alias.type = samples[i]->getType();
+                }
+                
+                if (a.length() > 0) {
+                    if (a[0] != '/') a.insert(a.begin(), '/');
+                    alias.address = a;
+                    samples[i]->addAlias(alias);
+                    cout << "added alias, size is now " <<  samples[i]->getAliases().size() << endl;
+                }
             }
         }
     }
@@ -101,8 +184,11 @@ void ofApp::draw(){
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
     
-    if (key == ' ') {
+    if (key == OF_KEY_ALT) {
         debug = !debug;
+        for (auto field : aliasFields) {
+            debug ? field->enable() : field->disable();
+        }
     }
     
     if (selectedSampIndex != -1 && selectedSampIndex < samples.size())
@@ -113,6 +199,10 @@ void ofApp::keyPressed(int key){
             if (ofGetKeyPressed(OF_KEY_SHIFT))
             {
                 samples.erase(samples.begin() + selectedSampIndex);
+                ofRemoveListener(aliasFields[selectedSampIndex]->textChanged,
+                                 this,
+                                 &ofApp::onAliasFieldTextChanged);
+                aliasFields.erase(aliasFields.begin() + selectedSampIndex);
                 if (samples.size() > 0)
                 {
                     selectedSampIndex = 0;
@@ -123,13 +213,13 @@ void ofApp::keyPressed(int key){
                     selectedSampIndex = -1;
                 }
             }
-            else
+            else if (!debug)
             {
                 samples[selectedSampIndex]->removeCharFromName();
             }
-        } else if (key == OF_KEY_RIGHT) {
+        } else if (key == OF_KEY_RIGHT && !aliasFields[selectedSampIndex]->getIsEditing()) {
             samples[selectedSampIndex]->setSmooth(samples[selectedSampIndex]->getSmooth() + 1);
-        } else if (key == OF_KEY_LEFT && samples[selectedSampIndex]->getSmooth()) {
+        } else if (key == OF_KEY_LEFT && samples[selectedSampIndex]->getSmooth() != 0 && !aliasFields[selectedSampIndex]->getIsEditing()) {
             samples[selectedSampIndex]->setSmooth(samples[selectedSampIndex]->getSmooth() - 1);
         }
     }
@@ -186,19 +276,19 @@ void ofApp::keyReleased(int key){
                 }
             }
         } else { // debug
-            if (key == OF_KEY_UP) {
+            if (key == OF_KEY_UP && !aliasFields[selectedSampIndex]->getIsEditing()) {
                 int type = samples[selectedSampIndex]->getType();
                 if (type < 3) {
                     type++;
                     samples[selectedSampIndex]->setType((Sample::sampleType) type);
                 } else samples[selectedSampIndex]->setType((Sample::sampleType) 0);
-            } else if (key == OF_KEY_DOWN) {
+            } else if (key == OF_KEY_DOWN && !aliasFields[selectedSampIndex]->getIsEditing()) {
                 int type = samples[selectedSampIndex]->getType();
                 if (type != 0) {
                     type--;
                     samples[selectedSampIndex]->setType((Sample::sampleType) type);
                 } else samples[selectedSampIndex]->setType((Sample::sampleType) 3);
-            } else if (key == 'e' || key == 'E') {
+            } else if ((key == 'e' || key == 'E') && !aliasFields[selectedSampIndex]->getIsEditing()) {
                 if (samples[selectedSampIndex]->getName() != "") {
                     samples[selectedSampIndex]->setEnabled(!samples[selectedSampIndex]->isEnabled());
                 }
@@ -243,6 +333,20 @@ void ofApp::mousePressed(int x, int y, int button){
         samp->setSelected(true);
         samples.push_back(samp);
         selectedSampIndex = samples.size() - 1;
+        
+        // add the alias input text fields
+        shared_ptr<ofxTextInputField> field(new ofxTextInputField);
+        field->setup();
+        field->multiline = true;
+        field->text = "";
+        field->disable();
+        field->bounds.x = 80;
+        field->bounds.width = ofGetWidth() / 2.5;
+        field->bounds.height = 20;
+        ofAddListener(field->textChanged, this, &ofApp::onAliasFieldTextChanged);
+        
+        aliasFields.push_back(field);
+        updateAliasFieldPositions();
     }
 }
 
@@ -262,7 +366,7 @@ void ofApp::mouseExited(int x, int y){
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
-
+    updateAliasFieldPositions();
 }
 
 //--------------------------------------------------------------

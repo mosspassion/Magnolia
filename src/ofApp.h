@@ -3,6 +3,7 @@
 #include "ofMain.h"
 #include "Sample.h"
 #include "ofxOSC.h"
+#include "ofxTextInputField.h"
 
 // Made with OF v0.9.3, untested w/ other versions.
 class ofApp : public ofBaseApp{
@@ -23,10 +24,13 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
+        void updateAliasFieldPositions();
+        void onAliasFieldTextChanged(const void * sender, string& text);
     
         bool debug;
         int selectedSampIndex;
         vector<shared_ptr<Sample>> samples;
+        vector<shared_ptr<ofxTextInputField>> aliasFields;
         ofVideoPlayer player;
         ofRectangle vidRect;
         ofxOscSender sender;
