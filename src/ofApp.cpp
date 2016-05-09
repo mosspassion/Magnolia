@@ -11,6 +11,7 @@ void ofApp::setup(){
     selectedSampIndex = -1;
     sender.setup("192.168.1.104", 12345);
     windowClickPoints.set(-1);
+    player.setVolume(0);
 }
 
 //--------------------------------------------------------------
